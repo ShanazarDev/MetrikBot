@@ -9,15 +9,15 @@ import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-# Path to log folder
-LogFolderPath.path = 'logs/'
-
 # Conf
 conf = configparser.ConfigParser()
 conf.read('settings.ini')
 
 # Driver
 DRIVER_PATH_CONF = conf['Driver']['path']
+
+# Path to log folder
+LogFolderPath.path = conf['LOGS']['path']
 
 # URLs
 URLS = conf['URLs']['urls'].split(',')
