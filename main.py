@@ -135,7 +135,8 @@ def scroll_to_element(driver: webdriver.Chrome, element: str) -> None:
 @logger.catch
 def get_random_link(link: list) -> str:
     r_link: str = random.choice(link)
-    logger.info(f'Random link {r_link.get_attribute('href')}')
+    href: str = r_link.get_attribute('href')
+    logger.info(f'Random link {href}')
     return r_link
 
 
