@@ -198,6 +198,8 @@ def main(url: str) -> None:
         logger.info('Started smooth scrolling')
 
         smooth_scroll(driver)
+        
+        time.sleep(DELAY_ON_PAGE)
 
         logger.info('Going to the random pages')
         for c in range(RANDOM_PAGE_COUNTS):
