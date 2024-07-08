@@ -110,8 +110,7 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
     window_height = driver.execute_script("return window.innerHeight")
 
     if page_height <= window_height:
-        logger.info(
-            "No need to scroll, the page height is within the window height.")
+        logger.info("No need to scroll, the page height is within the window height.")
         return
 
     current_position = 0
@@ -119,8 +118,7 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
     scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
 
     while current_position < end_position:
-        logger.info(f'Current postion: {
-                    current_position} - End position: {end_position}')
+        logger.info(f'Current postion: {current_position} - End position: {end_position}')
         current_position += scroll_step
         driver.execute_script(f"window.scrollTo(0, {current_position});")
         scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
@@ -130,10 +128,7 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
 @logger.catch
 def scroll_to_element(driver: webdriver.Chrome, element: str) -> None:
     logger(f'Scrolling to the element')
-    driver.execute_script(
-        "arguments[0].scrollIntoView({ behavior: 'smooth', block: 'center' });",
-        element
-    )
+    driver.execute_script("arguments[0].scrollIntoView({ behavior: 'smooth', block: 'center' });", element)
     time.sleep(random.uniform(SCROLL_DELAY_MIN, SCROLL_DELAY_MAX))
 
 
@@ -179,8 +174,7 @@ def main(url: str) -> None:
 
     driver_path: str = DRIVER_PATH_CONF
     driver = webdriver.Chrome(options=options, executable_path=driver_path)
-    driver.execute_script(
-        "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+    driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
     set_random_headers(driver, headers)
 
@@ -191,11 +185,8 @@ def main(url: str) -> None:
         # Waiting to all of page components
         driver.implicitly_wait(5)
 
-        print('old', driver.get_cookies())
-
         manage_cookies(driver)
 
-        print('new', driver.get_cookies())
         logger.info('Started smooth scrolling')
 
         smooth_scroll(driver)

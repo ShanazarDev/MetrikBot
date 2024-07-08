@@ -2,7 +2,7 @@ from loguru import logger
 
 
 class LogFolderPath:
-    path = ''
+    path = 'logs/'
 
 def info_filter(record):
     return record["level"].name == "INFO" or record["level"].name == "SUCCESS"
