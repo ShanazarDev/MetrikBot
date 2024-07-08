@@ -48,6 +48,11 @@ def set_random_headers(driver, headers) -> None:
     logger.info(f'Setting random Headers: {headers}')
     driver.execute_cdp_cmd('Network.setExtraHTTPHeaders', {'headers': headers})
 
+@logger.catch
+def get_random_user_agents() -> str:
+    ua = get_random_headers()['User-Agent']
+    return ua
+
 
 @logger.catch
 def get_random_chrome_options() -> webdriver.ChromeOptions:
@@ -105,7 +110,7 @@ def manage_cookies(driver: webdriver.Chrome) -> None:
 
 @logger.catch
 def smooth_scroll(driver: webdriver.Chrome) -> None:
-    driver.implicitly_wait(2)
+    driver.implicitly_wait(5)
     page_height = driver.execute_script("return document.body.scrollHeight")
     window_height = driver.execute_script("return window.innerHeight")
 
@@ -145,7 +150,7 @@ def click_random_links(driver: webdriver.Chrome) -> None:
     links: list = driver.find_elements(By.TAG_NAME, 'a')
     logger.info(f'All links on page {len(links)}')
     random_link: str = get_random_link(links)
-    time.sleep(2)
+    time.sleep(4)
 
     try:
         random_link.click()
@@ -157,7 +162,7 @@ def click_random_links(driver: webdriver.Chrome) -> None:
 
     except AttributeError as ex:
         logger.error(f'Error while click non page, turning back {ex}')
-        time.sleep(2)
+        time.sleep(4)
         driver.back()
 
     smooth_scroll(driver)
@@ -176,15 +181,17 @@ def main(url: str) -> None:
     driver_path: str = DRIVER_PATH_CONF
     driver = webdriver.Chrome(options=options, executable_path=driver_path)
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-
+    driver.execute_script("""Object.defineProperty(navigator, 'userAgent', {get: () => arguments[0]})""", get_random_user_agents())
+    driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": get_random_user_agents(),"platform": "Windows"})
     set_random_headers(driver, headers)
 
     try:
         logger.info(f'Request to the url: {url}')
         driver.get(url)
 
+
         # Waiting to all of page components
-        driver.implicitly_wait(5)
+        driver.implicitly_wait(10)
 
         manage_cookies(driver)
 
@@ -197,7 +204,7 @@ def main(url: str) -> None:
             if c <= RANDOM_PAGE_COUNTS:
                 logger.info('Going to the next page')
                 click_random_links(driver)
-            time.sleep(1)
+            time.sleep(5)
 
     except Exception as e:
         logger.error(f'Error on main function {e}')
