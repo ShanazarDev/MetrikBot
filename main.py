@@ -66,7 +66,7 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
     # options.add_argument("--incognito")
 
     # Headless - backgorund mode without GUI
-    options.add_argument("--headless")
+    # options.add_argument("--headless")
 
     options.add_argument('--no-sandbox')
     options.add_argument("--disable-infobars")
@@ -79,35 +79,6 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
     logger.info('Returning Chrome options for Driver and random window size')
     return options
 
-
-@logger.catch
-def manage_cookies(driver: webdriver.Chrome) -> None:
-    driver.implicitly_wait(2)
-    logger.info('Managing cookies')
-    try:
-        cookies: dict[str] = driver.get_cookies()
-        if cookies:
-            for cookie in cookies:
-                if random.choice([True, False]):
-                    driver.delete_cookie(cookie['name'])
-                else:
-                    new_expiry = cookie.get('expiry', int(
-                        time.time()) + random.randint(3600, 7200))
-                    driver.add_cookie({
-                        'name': cookie['name'],
-                        'value': cookie['value'],
-                        'domain': cookie['domain'],
-                        'path': cookie['path'],
-                        'expiry': new_expiry,
-                        'secure': cookie.get('secure', False),
-                        'httpOnly': cookie.get('httpOnly', False),
-                        'sameSite': cookie.get('sameSite', 'None'),
-                    })
-            logger.success('Cookies done!')
-    except Exception as e:
-        logger.error(f'Cookies error! {e}')
-
-
 @logger.catch
 def smooth_scroll(driver: webdriver.Chrome) -> None:
     driver.implicitly_wait(5)
@@ -119,7 +90,7 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
         return
 
     current_position = 0
-    end_position = random.randint(150, 500)
+    end_position = random.randint(150, 1500)
     scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
 
     while current_position < end_position:
@@ -153,11 +124,13 @@ def click_random_links(driver: webdriver.Chrome) -> None:
     time.sleep(4)
 
     try:
-        random_link.click()
+        # random_link.click()
+        driver.get(random_link.get_attribute('href'))
         time.sleep(DELAY_ON_PAGE)
     except selenium.common.exceptions.ElementNotInteractableException as ex:
+        # random_link.find_element(By.XPATH, '..').click()
         logger.error(f'Error on click to random link {ex}')
-        get_random_link(links).click()
+        driver.get(get_random_link(links).get_attribute('href'))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
@@ -193,8 +166,6 @@ def main(url: str) -> None:
         # Waiting to all of page components
         driver.implicitly_wait(10)
 
-        manage_cookies(driver)
-
         logger.info('Started smooth scrolling')
 
         smooth_scroll(driver)
@@ -213,11 +184,13 @@ def main(url: str) -> None:
     finally:
         try:
             time.sleep(DELAY_ON_PAGE)
+            driver.delete_all_cookies()
             driver.quit()
             logger.success('Quiting the driver')
         except Exception as e:
             logger.error(f'Error while quiting the driver {e}')
             import sys
+            driver.delete_all_cookies()
             sys.exit()
 
 
