@@ -66,7 +66,7 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
     # options.add_argument("--incognito")
 
     # Headless - backgorund mode without GUI
-    # options.add_argument("--headless")
+    options.add_argument("--headless")
 
     options.add_argument('--no-sandbox')
     options.add_argument("--disable-infobars")
@@ -177,6 +177,7 @@ def main(url: str) -> None:
             if c <= RANDOM_PAGE_COUNTS:
                 logger.info('Going to the next page')
                 click_random_links(driver)
+                logger.info(f"Cookies: {driver.get_cookies()}")
             time.sleep(5)
 
     except Exception as e:
