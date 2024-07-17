@@ -23,16 +23,16 @@ LogFolderPath.path = conf['LOGS']['path']
 URLS = conf['URLs']['urls'].split(',')
 
 # Scrolls
-SCROLL_DELAY_MIN: float = float(conf['Timers']['scroll_delay_min'])
-SCROLL_DELAY_MAX: float = float(conf['Timers']['scroll_delay_max'])
-SCROLL_STEP_MIN: int = int(conf['Counts']['scroll_step_min'])
-SCROLL_STEP_MAX: int = int(conf['Counts']['scroll_step_max'])
+SCROLL_DELAY_MIN: float = random.uniform(0.25, 1)
+SCROLL_DELAY_MAX: float = random.uniform(1, 1.75)
+SCROLL_STEP_MIN: int = random.randint(5, 15)
+SCROLL_STEP_MAX: int = random.randint(15, 45)
 
 # Delay
-DELAY_ON_PAGE: float = float(conf['Timers']['delay_on_page'])
+DELAY_ON_PAGE: float = random.uniform(1, 3)
 
 # Counts
-RANDOM_PAGE_COUNTS: int = int(conf['Counts']['random_page_counts'])
+RANDOM_PAGE_COUNTS: int = random.randint(1, 4)
 
 logger.info('Service Start')
 
@@ -79,38 +79,9 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
     logger.info('Returning Chrome options for Driver and random window size')
     return options
 
-
-@logger.catch
-def manage_cookies(driver: webdriver.Chrome) -> None:
-    driver.implicitly_wait(2)
-    logger.info('Managing cookies')
-    try:
-        cookies: dict[str] = driver.get_cookies()
-        if cookies:
-            for cookie in cookies:
-                if random.choice([True, False]):
-                    driver.delete_cookie(cookie['name'])
-                else:
-                    new_expiry = cookie.get('expiry', int(
-                        time.time()) + random.randint(3600, 7200))
-                    driver.add_cookie({
-                        'name': cookie['name'],
-                        'value': cookie['value'],
-                        'domain': cookie['domain'],
-                        'path': cookie['path'],
-                        'expiry': new_expiry,
-                        'secure': cookie.get('secure', False),
-                        'httpOnly': cookie.get('httpOnly', False),
-                        'sameSite': cookie.get('sameSite', 'None'),
-                    })
-            logger.success('Cookies done!')
-    except Exception as e:
-        logger.error(f'Cookies error! {e}')
-
-
 @logger.catch
 def smooth_scroll(driver: webdriver.Chrome) -> None:
-    driver.implicitly_wait(5)
+    driver.implicitly_wait(random.randint(2, 6))
     page_height = driver.execute_script("return document.body.scrollHeight")
     window_height = driver.execute_script("return window.innerHeight")
 
@@ -119,7 +90,7 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
         return
 
     current_position = 0
-    end_position = random.randint(150, 500)
+    end_position = random.randint(150, 1500)
     scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
 
     while current_position < end_position:
@@ -153,16 +124,21 @@ def click_random_links(driver: webdriver.Chrome) -> None:
     time.sleep(4)
 
     try:
-        random_link.click()
+        if random.choice([True, False]):
+            random_link.click()
+            logger.info('Execute click!')
+        else:
+            driver.get(random_link.get_attribute('href'))
+            logger.info('Execute get method!')
         time.sleep(DELAY_ON_PAGE)
     except selenium.common.exceptions.ElementNotInteractableException as ex:
         logger.error(f'Error on click to random link {ex}')
-        get_random_link(links).click()
+        driver.get(get_random_link(links).get_attribute('href'))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
         logger.error(f'Error while click non page, turning back {ex}')
-        time.sleep(4)
+        time.sleep(random.randint(2, 7))
         driver.back()
 
     smooth_scroll(driver)
@@ -191,9 +167,7 @@ def main(url: str) -> None:
 
 
         # Waiting to all of page components
-        driver.implicitly_wait(10)
-
-        manage_cookies(driver)
+        driver.implicitly_wait(random.randint(4, 8))
 
         logger.info('Started smooth scrolling')
 
@@ -206,18 +180,21 @@ def main(url: str) -> None:
             if c <= RANDOM_PAGE_COUNTS:
                 logger.info('Going to the next page')
                 click_random_links(driver)
-            time.sleep(5)
+                logger.info(f"Cookies: {driver.get_cookies()}")
+            time.sleep(random.randint(2, 7))
 
     except Exception as e:
         logger.error(f'Error on main function {e}')
     finally:
         try:
             time.sleep(DELAY_ON_PAGE)
+            driver.delete_all_cookies()
             driver.quit()
             logger.success('Quiting the driver')
         except Exception as e:
             logger.error(f'Error while quiting the driver {e}')
             import sys
+            driver.delete_all_cookies()
             sys.exit()
 
 
