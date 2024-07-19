@@ -1,26 +1,25 @@
 import time
 import random
-import configparser
 
 from logging_settings import logger, LogFolderPath
 from fake_headers import Headers
+from headbot_data import send_stat, get_settings
 
 import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-# Conf
-conf = configparser.ConfigParser()
-conf.read('settings.ini')
+# Settings
+settings = get_settings()
 
 # Driver
-DRIVER_PATH_CONF = conf['Driver']['path']
+DRIVER_PATH_CONF = settings['driver_path']
 
 # Path to log folder
-LogFolderPath.path = conf['LOGS']['path']
+LogFolderPath.path = 'logs/'
 
 # URLs
-URLS = conf['URLs']['urls'].split(',')
+URLS = settings['urls']
 
 # Scrolls
 SCROLL_DELAY_MIN: float = random.uniform(0.25, 1)
@@ -80,13 +79,13 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
     return options
 
 @logger.catch
-def smooth_scroll(driver: webdriver.Chrome) -> None:
+def smooth_scroll(driver: webdriver.Chrome, url) -> None:
     driver.implicitly_wait(random.randint(2, 6))
     page_height = driver.execute_script("return document.body.scrollHeight")
     window_height = driver.execute_script("return window.innerHeight")
 
     if page_height <= window_height:
-        logger.info("No need to scroll, the page height is within the window height.")
+        logger.info(f"No need to scroll, the page height is within the window height. {url}")
         return
 
     current_position = 0
@@ -94,7 +93,7 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
     scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
 
     while current_position < end_position:
-        logger.info(f'Current postion: {current_position} - End position: {end_position}')
+        logger.info(f'Current postion: {current_position} - End position: {end_position}  site: {url}')
         current_position += scroll_step
         driver.execute_script(f"window.scrollTo(0, {current_position});")
         scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
@@ -117,7 +116,7 @@ def get_random_link(link: list) -> str:
 
 
 @logger.catch
-def click_random_links(driver: webdriver.Chrome) -> None:
+def click_random_links(driver: webdriver.Chrome, url) -> None:
     links: list = driver.find_elements(By.TAG_NAME, 'a')
     logger.info(f'All links on page {len(links)}')
     random_link: str = get_random_link(links)
@@ -127,21 +126,25 @@ def click_random_links(driver: webdriver.Chrome) -> None:
         if random.choice([True, False]):
             random_link.click()
             logger.info('Execute click!')
+            send_stat('links')
         else:
             driver.get(random_link.get_attribute('href'))
+            send_stat('links')
             logger.info('Execute get method!')
         time.sleep(DELAY_ON_PAGE)
     except selenium.common.exceptions.ElementNotInteractableException as ex:
         logger.error(f'Error on click to random link {ex}')
+        send_stat('error')
         driver.get(get_random_link(links).get_attribute('href'))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
         logger.error(f'Error while click non page, turning back {ex}')
+        send_stat('links')
         time.sleep(random.randint(2, 7))
         driver.back()
 
-    smooth_scroll(driver)
+    smooth_scroll(driver, url)
 
     time.sleep(DELAY_ON_PAGE)
     driver.back()
@@ -171,28 +174,29 @@ def main(url: str) -> None:
 
         logger.info('Started smooth scrolling')
 
-        smooth_scroll(driver)
+        smooth_scroll(driver, url)
         
         time.sleep(DELAY_ON_PAGE)
 
-        logger.info('Going to the random pages')
+        logger.info(f'Going to the random pages {url}')
         for c in range(RANDOM_PAGE_COUNTS):
             if c <= RANDOM_PAGE_COUNTS:
-                logger.info('Going to the next page')
-                click_random_links(driver)
+                logger.info(f'Going to the next page {url}')
+                click_random_links(driver, url)
                 logger.info(f"Cookies: {driver.get_cookies()}")
             time.sleep(random.randint(2, 7))
 
     except Exception as e:
-        logger.error(f'Error on main function {e}')
+        logger.error(f'Error on main function {e} {url}')
     finally:
         try:
             time.sleep(DELAY_ON_PAGE)
             driver.delete_all_cookies()
+            send_stat('interval')
             driver.quit()
-            logger.success('Quiting the driver')
+            logger.success(f'Quiting the driver {url}')
         except Exception as e:
-            logger.error(f'Error while quiting the driver {e}')
+            logger.error(f'Error while quiting the driver {e} {url}')
             import sys
             driver.delete_all_cookies()
             sys.exit()
