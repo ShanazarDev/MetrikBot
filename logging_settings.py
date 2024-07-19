@@ -1,5 +1,5 @@
 from loguru import logger
-
+from headbot_data import send_stat
 
 class LogFolderPath:
     path = 'logs/'
@@ -9,6 +9,11 @@ def info_filter(record):
 
 
 def error_filter(record):
+    try:
+        send_stat('error')
+    except Exception:
+        pass
+
     return record["level"].name == "ERROR" and not "traceback" in record["extra"]
 
 
