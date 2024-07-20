@@ -132,7 +132,7 @@ def click_random_links(driver: webdriver.Chrome, url) -> None:
             send_stat('links')
             logger.info('Execute get method!')
         time.sleep(DELAY_ON_PAGE)
-    except (selenium.common.exceptions.ElementNotInteractableException, selenium.common.exceptions.ElementClickInterceptedException:) as ex:
+    except (selenium.common.exceptions.ElementNotInteractableException, selenium.common.exceptions.ElementClickInterceptedException) as ex:
         logger.error(f'Error on click to random link {ex}')
         send_stat('error')
         driver.get(get_random_link(links).get_attribute('href'))
