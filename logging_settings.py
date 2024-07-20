@@ -7,7 +7,6 @@ class LogFolderPath:
 def info_filter(record):
     return record["level"].name == "INFO" or record["level"].name == "SUCCESS"
 
-
 def error_filter(record):
     try:
         send_stat('error')
