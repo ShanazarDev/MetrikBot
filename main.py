@@ -28,10 +28,10 @@ SCROLL_STEP_MIN: int = random.randint(5, 15)
 SCROLL_STEP_MAX: int = random.randint(15, 45)
 
 # Delay
-DELAY_ON_PAGE: float = random.uniform(1, 3)
+DELAY_ON_PAGE: float = random.uniform(3, 7)
 
 # Counts
-RANDOM_PAGE_COUNTS: int = random.randint(1, 4)
+RANDOM_PAGE_COUNTS: int = random.randint(2, 6)
 
 logger.info('Service Start')
 
