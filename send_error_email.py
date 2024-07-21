@@ -13,7 +13,7 @@ client = SMTP(
 
 
 def send_email(error, ip_address):
-    subject = f'Ошибка на сервере "{ip_address}"'
+    subject = f'Сервер "{ip_address}"'
 
     client.create_mime(
         recipient_email_addr=email_receiver,
