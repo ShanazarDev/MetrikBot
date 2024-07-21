@@ -14,12 +14,6 @@ send_error_email() {
 # Остановка cron службы
 sudo service cron stop
 
-# Проверка, что cron остановлен
-if pgrep cron > /dev/null; then
-    send_error_email "Ошибка: служба cron не остановлена"
-    exit 1
-fi
-
 # Переход в директорию репозитория
 cd /root/MetrikBot || { send_error_email "Ошибка: не удалось перейти в директорию репозитория"; exit 1; }
 
@@ -41,12 +35,6 @@ deactivate
 
 # Запуск cron службы
 sudo service cron start
-
-# Проверка, что cron запущен
-if ! pgrep cron > /dev/null; then
-    send_error_email "Ошибка: служба cron не запущена"
-    exit 1
-fi
 
 send_error_email "Обновление успешно завершено"
 echo "Обновление успешно завершено"
