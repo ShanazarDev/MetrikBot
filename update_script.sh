@@ -11,9 +11,6 @@ send_error_email() {
     deactivate
 }
 
-# Остановка cron службы
-sudo service cron stop
-
 # Переход в директорию репозитория
 cd /root/MetrikBot || { send_error_email "Ошибка: не удалось перейти в директорию репозитория"; exit 1; }
 
@@ -32,9 +29,6 @@ fi
 
 # Деактивация виртуального окружения
 deactivate
-
-# Запуск cron службы
-sudo service cron start
 
 send_error_email "Обновление успешно завершено"
 echo "Обновление успешно завершено"
