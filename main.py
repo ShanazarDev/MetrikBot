@@ -28,10 +28,10 @@ SCROLL_STEP_MIN: int = random.randint(5, 15)
 SCROLL_STEP_MAX: int = random.randint(15, 45)
 
 # Delay
-DELAY_ON_PAGE: float = random.uniform(3, 7)
+DELAY_ON_PAGE: float = random.uniform(1, 3)
 
 # Counts
-RANDOM_PAGE_COUNTS: int = random.randint(2, 6)
+RANDOM_PAGE_COUNTS: int =  random.randint(3, 5)
 
 logger.info('Service Start')
 
@@ -79,13 +79,13 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
     return options
 
 @logger.catch
-def smooth_scroll(driver: webdriver.Chrome, url) -> None:
+def smooth_scroll(driver: webdriver.Chrome) -> None:
     driver.implicitly_wait(random.randint(2, 6))
     page_height = driver.execute_script("return document.body.scrollHeight")
     window_height = driver.execute_script("return window.innerHeight")
 
     if page_height <= window_height:
-        logger.info(f"No need to scroll, the page height is within the window height. {url}")
+        logger.info(f"No need to scroll, the page height is within the window height. {driver.current_url}")
         return
 
     current_position = 0
@@ -93,7 +93,7 @@ def smooth_scroll(driver: webdriver.Chrome, url) -> None:
     scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
 
     while current_position < end_position:
-        logger.info(f'Current postion: {current_position} - End position: {end_position}  site: {url}')
+        logger.info(f'Current postion: {current_position} - End position: {end_position}  site: {driver.current_url}')
         current_position += scroll_step
         driver.execute_script(f"window.scrollTo(0, {current_position});")
         scroll_step = random.randint(SCROLL_STEP_MIN, SCROLL_STEP_MAX)
@@ -109,48 +109,49 @@ def scroll_to_element(driver: webdriver.Chrome, element: str) -> None:
 
 @logger.catch
 def get_random_link(link: list) -> str:
+    random.shuffle(link)
     r_link: str = random.choice(link)
     href: str = r_link.get_attribute('href')
     logger.info(f'Random link {href}')
     return r_link
 
+@logger.catch
+def find_all_links(driver: webdriver.Chrome) -> list:
+    return driver.find_elements(By.TAG_NAME, 'a')
 
 @logger.catch
 def click_random_links(driver: webdriver.Chrome, url) -> None:
-    links: list = driver.find_elements(By.TAG_NAME, 'a')
-    logger.info(f'All links on page {len(links)}')
-    random_link: str = get_random_link(links)
+    logger.info(f'All links on page {len(find_all_links(driver))}')
+    random_link: str = get_random_link(find_all_links(driver))
     time.sleep(4)
 
     try:
         driver.execute_script('arguments[0].click();', random_link)
         logger.info('Execute click!')
-        # if random.choice([True, False]):
-        #     random_link.click()
-        #     send_stat('links')
-        # else:
-        #     driver.get(random_link.get_attribute('href'))
-        #     send_stat('links')
-        #     logger.info('Execute get method!')
         time.sleep(DELAY_ON_PAGE)
     except (selenium.common.exceptions.ElementNotInteractableException, selenium.common.exceptions.ElementClickInterceptedException, Exception) as ex:
+        logger.info('Execute get method')
         logger.error(f'Error on click to random link {ex}')
-        # send_stat('error')
-        driver.get(get_random_link(links).get_attribute('href'))
+        driver.get(get_random_link(find_all_links(driver)).get_attribute('href'))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
         logger.error(f'Error while click non page, turning back {ex}')
         send_stat('links')
         time.sleep(random.randint(2, 7))
-        driver.back()
 
-    smooth_scroll(driver, url)
+    smooth_scroll(driver)
 
     time.sleep(DELAY_ON_PAGE)
-    driver.back()
-    logger.success('Back to the main page')
-
+    
+    for _ in range(RANDOM_PAGE_COUNTS):
+        logger.info(f"Random page current count: {_} \n Page: {driver.current_url}")
+        driver.execute_script('arguments[0].click();', get_random_link(find_all_links(driver)))
+        time.sleep(DELAY_ON_PAGE)
+        smooth_scroll(driver)
+        send_stat('links')
+    
+    time.sleep(DELAY_ON_PAGE)
 
 @logger.catch
 def main(url: str) -> None:
@@ -175,29 +176,27 @@ def main(url: str) -> None:
 
         logger.info('Started smooth scrolling')
 
-        smooth_scroll(driver, url)
+        smooth_scroll(driver)
         
         time.sleep(DELAY_ON_PAGE)
 
         logger.info(f'Going to the random pages {url}')
-        for c in range(RANDOM_PAGE_COUNTS):
-            if c <= RANDOM_PAGE_COUNTS:
-                logger.info(f'Going to the next page {url}')
-                click_random_links(driver, url)
-                logger.info(f"Cookies: {driver.get_cookies()}")
-            time.sleep(random.randint(2, 7))
+        click_random_links(driver, url)
+        logger.info(f"Cookies: {driver.get_cookies()}")
+        time.sleep(random.randint(2, 7))
 
     except Exception as e:
-        logger.error(f'Error on main function {e} {url}')
+        logger.error(f'Error on main function {e} {driver.current_url}')
     finally:
         try:
             time.sleep(DELAY_ON_PAGE)
             driver.delete_all_cookies()
+            logger.info('Deleting cookies')
             send_stat('interval')
             driver.quit()
-            logger.success(f'Quiting the driver {url}')
+            logger.success(f'Quiting the driver {driver.current_url}')
         except Exception as e:
-            logger.error(f'Error while quiting the driver {e} {url}')
+            logger.error(f'Error while quiting the driver {e} {driver.current_url}')
             import sys
             driver.delete_all_cookies()
             sys.exit()
