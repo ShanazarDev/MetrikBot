@@ -193,12 +193,12 @@ def main(url: str) -> None:
             driver.delete_all_cookies()
             logger.info('Deleting cookies')
             send_stat('interval')
-            driver.quit()
             logger.success(f'Quiting the driver {driver.current_url}')
+            driver.close()
+            driver.quit()
         except Exception as e:
-            logger.error(f'Error while quiting the driver {e} {driver.current_url}')
             import sys
-            driver.delete_all_cookies()
+            logger.error(f'Error while quiting the driver {e} {driver.current_url}')
             sys.exit()
 
 
