@@ -1,5 +1,6 @@
 from loguru import logger
 from headbot_data import send_stat
+import asyncio
 
 class LogFolderPath:
     path = 'logs/'
@@ -9,7 +10,7 @@ def info_filter(record):
 
 def error_filter(record):
     try:
-        send_stat('error')
+        asyncio.run(send_stat('error'))
     except Exception:
         pass
 

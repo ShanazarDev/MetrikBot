@@ -3,3 +3,5 @@
 /logs/*
 __pycache__/*
 run_script.sh
+/newvenv/*
+automatedbot.py

@@ -2,24 +2,36 @@ import time
 import random
 
 from logging_settings import logger, LogFolderPath
-from fake_headers import Headers
 from headbot_data import send_stat, get_settings
 
+from fake_headers import Headers
+from urllib.parse import urlparse
+
 import selenium
-from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from seleniumwire import webdriver
+
+proxy_options = {
+    "proxy": {
+        "http": "http://3PVBj8:9eQ7Eo@209.46.3.52:8000",
+        "https": "https://3PVBj8:9eQ7Eo@209.46.3.52:8000",
+        'no_proxy': 'localhost,127.0.0.1'
+    }
+}
 
 # Settings
 settings = get_settings()
-
-# Driver
-DRIVER_PATH_CONF = settings['driver_path']
 
 # Path to log folder
 LogFolderPath.path = 'logs/'
 
 # URLs
-URLS = settings['urls']
+URLS =  settings['urls']
+
+DRIVER_PATH =  settings['driver_path']
 
 # Scrolls
 SCROLL_DELAY_MIN: float = random.uniform(0.25, 1)
@@ -30,8 +42,8 @@ SCROLL_STEP_MAX: int = random.randint(15, 45)
 # Delay
 DELAY_ON_PAGE: float = random.uniform(1, 3)
 
-# Counts
-RANDOM_PAGE_COUNTS: int =  random.randint(3, 5)
+# Counts 
+RANDOM_PAGE_COUNTS: int =  random.randint(2, 4)
 
 logger.info('Service Start')
 
@@ -66,10 +78,16 @@ def get_random_chrome_options() -> webdriver.ChromeOptions:
 
     # Headless - backgorund mode without GUI
     options.add_argument("--headless")
-
+    
     options.add_argument('--no-sandbox')
     options.add_argument("--disable-infobars")
     options.add_argument("--disable-extensions")
+    options.add_argument("--disable-gpu")  
+    options.add_argument("--disable-dev-shm-usage")
+    options.add_argument('--disable-sync')
+    options.add_argument('--disable-translate')
+    options.add_argument('--safebrowsing-disable-auto-update')
+    options.add_argument("--disable-features=VizDisplayCompositor") 
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
@@ -100,20 +118,29 @@ def smooth_scroll(driver: webdriver.Chrome) -> None:
         time.sleep(random.uniform(SCROLL_DELAY_MIN, SCROLL_DELAY_MAX))
 
 
-@logger.catch
-def scroll_to_element(driver: webdriver.Chrome, element: str) -> None:
-    logger(f'Scrolling to the element')
-    driver.execute_script("arguments[0].scrollIntoView({ behavior: 'smooth', block: 'center' });", element)
-    time.sleep(random.uniform(SCROLL_DELAY_MIN, SCROLL_DELAY_MAX))
+def is_valid_link(base_url, link):
+    base_domain = urlparse(base_url).netloc
+    link_url = link.get_attribute('href')
+    link_domain = urlparse(link_url).netloc
+    
+    if link_domain != base_domain:
+        return False
+
+    if link_url.endswith('/#') or link_url == base_url:
+        return False
+
+    return True
 
 
 @logger.catch
-def get_random_link(link: list) -> str:
-    random.shuffle(link)
+def get_random_link(link: list, driver: webdriver.Chrome) -> str:
     r_link: str = random.choice(link)
     href: str = r_link.get_attribute('href')
-    logger.info(f'Random link {href}')
-    return r_link
+    while is_valid_link(driver.current_url, r_link):
+        print(href)
+        logger.info(f'Random link {href}')
+        return r_link
+        
 
 @logger.catch
 def find_all_links(driver: webdriver.Chrome) -> list:
@@ -121,18 +148,26 @@ def find_all_links(driver: webdriver.Chrome) -> list:
 
 @logger.catch
 def click_random_links(driver: webdriver.Chrome, url) -> None:
+    
+    WebDriverWait(driver, DELAY_ON_PAGE).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+    )
+    
     logger.info(f'All links on page {len(find_all_links(driver))}')
-    random_link: str = get_random_link(find_all_links(driver))
+    random_link: str = get_random_link(find_all_links(driver), driver)
     time.sleep(4)
-
+    
     try:
         driver.execute_script('arguments[0].click();', random_link)
         logger.info('Execute click!')
         time.sleep(DELAY_ON_PAGE)
-    except (selenium.common.exceptions.ElementNotInteractableException, selenium.common.exceptions.ElementClickInterceptedException, Exception) as ex:
+    except (selenium.common.exceptions.JavascriptException, 
+            selenium.common.exceptions.ElementNotInteractableException, 
+            selenium.common.exceptions.ElementClickInterceptedException) as ex:
+        random_link: str = get_random_link(find_all_links(driver), driver)
         logger.info('Execute get method')
         logger.error(f'Error on click to random link {ex}')
-        driver.get(get_random_link(find_all_links(driver)).get_attribute('href'))
+        driver.get(random_link.get_attribute('href'))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
@@ -145,8 +180,19 @@ def click_random_links(driver: webdriver.Chrome, url) -> None:
     time.sleep(DELAY_ON_PAGE)
     
     for _ in range(RANDOM_PAGE_COUNTS):
-        logger.info(f"Random page current count: {_} \n Page: {driver.current_url}")
-        driver.execute_script('arguments[0].click();', get_random_link(find_all_links(driver)))
+        WebDriverWait(driver, DELAY_ON_PAGE).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        random_link: str = get_random_link(find_all_links(driver), driver)
+        logger.info(f"Page current count: {_}. Counts: {RANDOM_PAGE_COUNTS} \n Page: {driver.current_url}")
+        try:
+            driver.execute_script('arguments[0].click();', random_link)
+        except selenium.common.exceptions.JavascriptException:
+            driver.back()
+            time.sleep(2)
+            random_link: str = get_random_link(find_all_links(driver), driver)
+            driver.execute_script('arguments[0].click();', random_link)
+
         time.sleep(DELAY_ON_PAGE)
         smooth_scroll(driver)
         send_stat('links')
@@ -158,9 +204,8 @@ def main(url: str) -> None:
     logger.info(f'Starting main function kwargs')
     options: str = get_random_chrome_options()
     headers: dict[str] = get_random_headers()
-
-    driver_path: str = DRIVER_PATH_CONF
-    driver = webdriver.Chrome(options=options, executable_path=driver_path)
+    service = Service(executable_path=DRIVER_PATH)
+    driver = webdriver.Chrome(options=options, seleniumwire_options=proxy_options, service=service)
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     driver.execute_script("""Object.defineProperty(navigator, 'userAgent', {get: () => arguments[0]})""", get_random_user_agents())
     driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": get_random_user_agents(),"platform": "Windows"})
@@ -170,20 +215,18 @@ def main(url: str) -> None:
         logger.info(f'Request to the url: {url}')
         driver.get(url)
 
-
-        # Waiting to all of page components
-        driver.implicitly_wait(random.randint(4, 8))
+        WebDriverWait(driver, DELAY_ON_PAGE).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
 
         logger.info('Started smooth scrolling')
 
         smooth_scroll(driver)
         
-        time.sleep(DELAY_ON_PAGE)
 
         logger.info(f'Going to the random pages {url}')
         click_random_links(driver, url)
         logger.info(f"Cookies: {driver.get_cookies()}")
-        time.sleep(random.randint(2, 7))
 
     except Exception as e:
         logger.error(f'Error on main function {e} {driver.current_url}')
@@ -203,11 +246,18 @@ def main(url: str) -> None:
 
 
 if __name__ == "__main__":
-    import threading
-    logger.success(f'Urls: {URLS}')
-
+    from multiprocessing import Process
+    logger.success(f'URLs: {URLS}')
+    
     try:
+        processes = []
         for url in URLS:
-            threading.Thread(target=main, args=(url,)).start()
+            process = Process(target=main, args=(url,))
+            processes.append(process)
+            process.start()
+
+        for process in processes:
+            process.join()
+            
     except KeyboardInterrupt as ex:
         pass
