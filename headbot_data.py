@@ -2,7 +2,7 @@ import requests
 import aiohttp
 
 def get_settings() -> dict[str]:
-    settings_url = 'http://192.168.0.252:8025/settings/'
+    settings_url = 'http://192.168.0.252:8045/settings/'
     try:
         req = requests.get(settings_url)
         return req.json()
@@ -10,7 +10,7 @@ def get_settings() -> dict[str]:
         pass
     
 def get_proxy() -> dict[str]:
-    proxy_url = 'http://192.168.0.252:8025/proxy/'
+    proxy_url = 'http://192.168.0.252:8045/proxy/'
     try:
         req = requests.get(proxy_url)
         return req.json()
