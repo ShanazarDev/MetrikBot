@@ -137,12 +137,14 @@ class AdBot:
           logger.info(f'All links on page {len(links_from_page)}')
           
           if len(links_from_page) == 0:
-              logger.info('Going back 0 links on page')
               self.driver.back()
               WebDriverWait(self.driver, self.DELAY_ON_PAGE).until(
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
               )
               time.sleep(self.DELAY_ON_PAGE)
+              links_from_page = self.driver.find_elements(By.TAG_NAME, 'a')
+              logger.info('Going back 0 links on page')
+              logger.info(f'All links on page {len(links_from_page)}')
       
           links = []
           for l in links_from_page:
