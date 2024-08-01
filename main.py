@@ -46,8 +46,8 @@ class AdBot:
         self.proxy: dict[str] = get_proxy()['proxy']
         self.proxy_options: dict[str] = {
              "proxy": {
-               "http": f"{self.proxy['protocol']}://{self.proxy['username']}:{self.proxy['password']}@{self.proxy['ip']}:{self.proxy['port']}",
-               "https": f"{self.proxy['protocol']}s://{self.proxy['username']}:{self.proxy['password']}@{self.proxy['ip']}:{self.proxy['port']}",
+               "http": f"http://{self.proxy['username']}:{self.proxy['password']}@{self.proxy['ip']}:{self.proxy['port']}",
+               "https": f"{self.proxy['protocol']}://{self.proxy['username']}:{self.proxy['password']}@{self.proxy['ip']}:{self.proxy['port']}",
                "no_proxy": "localhost,127.0.0.1"
                }
              }
@@ -125,7 +125,7 @@ class AdBot:
                link_url = l.get_attribute('href')
                link_domain = urlparse(link_url).netloc
                               
-               if link_domain != base_domain or link_url.endswith('/#') or link_url == current_url or l is None:
+               if link_domain != base_domain or link_url.endswith('/#') or link_url == current_url or l is None or link_url.endswith('catalog.pdf'):
                     continue
                else:
                     correct_links.append(l)
@@ -148,9 +148,8 @@ class AdBot:
       
           links = []
           for l in links_from_page:
-               if l.is_displayed() and l.is_enabled():
+               if l.is_displayed() and l.is_enabled() and l.get_attribute('href') != '':
                     links.append(l)
-          
           r_link: str = random.choice(self.is_valid_link(links))
           return r_link
 
@@ -222,7 +221,7 @@ class AdBot:
                self.smooth_scroll()
                
 
-               logger.info(f'1. Going to the random pages {self.url}')
+               logger.info(f'2. Going to the random pages {self.url}')
                self.click_to_link()
                logger.info(f"Cookies: {self.driver.get_cookies()}")
 
