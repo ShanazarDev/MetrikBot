@@ -10,7 +10,7 @@ def info_filter(record):
 
 def error_filter(record):
     try:
-        asyncio.run(send_stat('error'))
+        asyncio.run(send_stat('error', f'{record}'))
     except Exception:
         pass
 
