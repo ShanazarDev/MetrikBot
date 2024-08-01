@@ -20,6 +20,17 @@ source venv/bin/activate
 # Обновление репозитория
 git pull origin repo || { send_error_email "Ошибка: не удалось обновить репозиторий"; deactivate; exit 1; }
 
+# Получаем информацию о последнем коммите
+LAST_COMMIT=$(git log -1 --pretty=format:'%H')
+LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
+
+# Формируем JSON данные
+DATA=$(jq -n --arg commit "$LAST_COMMIT" --arg message "$LAST_COMMIT_MESSAGE" '{commit: $commit, message: $message}')
+
+# Отправляем данные на сервер
+curl -X POST -H "Content-Type: application/json" -d "$DATA" http://192.168.0.252:8045/version/
+
+
 # Проверка успешности обновления
 if [ $? -ne 0 ]; then
     send_error_email "Ошибка: не удалось обновить репозиторий"
