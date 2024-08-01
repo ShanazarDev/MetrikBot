@@ -25,7 +25,7 @@ LAST_COMMIT=$(git log -1 --pretty=format:'%H')
 LAST_COMMIT_MESSAGE=$(git log -1 --pretty=format:'%s')
 
 # Формируем JSON данные
-DATA=$(jq -n --arg commit "$LAST_COMMIT" --arg message "$LAST_COMMIT_MESSAGE" '{commit: $commit, message: $message}')
+DATA=$(printf '{"commit": "%s", "message": "%s"}' "$LAST_COMMIT" "$LAST_COMMIT_MESSAGE")
 
 # Отправляем данные на сервер
 curl -X POST -H "Content-Type: application/json" -d "$DATA" http://192.168.0.252:8045/version/
