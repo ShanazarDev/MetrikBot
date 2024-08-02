@@ -76,7 +76,7 @@ class AdBot:
         self.options.add_argument(
              f"--window-size={random.randint(800, 1920)},{random.randint(600, 1080)}")
         
-        self.driver = webdriver.Chrome(options=self.options, seleniumwire_options=self.proxy_options, service=self.service)
+        self.driver = webdriver.Chrome(options=self.options, service=self.service)
 
         # Random Headers & Random User-Agent
         self.random_headers: dict[str] = Headers(headers=True).generate()
