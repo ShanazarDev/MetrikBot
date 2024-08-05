@@ -1,5 +1,5 @@
 import time
-import random
+import random, asyncio
 
 from logging_settings import logger, LogFolderPath
 from fake_headers import Headers
@@ -128,13 +128,13 @@ def click_random_links(driver: webdriver.Chrome, url) -> None:
     try:
         driver.execute_script('arguments[0].click();', random_link)
         logger.info('Execute click!')
-        send_stat('links', driver.current_url)
+        asyncio.run(send_stat('links', driver.current_url))
         time.sleep(DELAY_ON_PAGE)
     except (selenium.common.exceptions.ElementNotInteractableException, selenium.common.exceptions.ElementClickInterceptedException, Exception) as ex:
         logger.info('Execute get method')
         logger.error(f'Error on click to random link {ex}')
         driver.get(get_random_link(find_all_links(driver)).get_attribute('href'))
-        send_stat('links', driver.current_url)
+        asyncio.run(send_stat('links', driver.current_url))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
@@ -150,7 +150,7 @@ def click_random_links(driver: webdriver.Chrome, url) -> None:
         driver.execute_script('arguments[0].click();', get_random_link(find_all_links(driver)))
         time.sleep(DELAY_ON_PAGE)
         smooth_scroll(driver)
-        send_stat('links', driver.current_url)
+        asyncio.run(send_stat('links', driver.current_url))
     
     time.sleep(DELAY_ON_PAGE)
 
@@ -194,7 +194,7 @@ def main(url: str) -> None:
             time.sleep(DELAY_ON_PAGE)
             driver.delete_all_cookies()
             logger.info('Deleting cookies')
-            send_stat('interval')
+            asyncio.run(send_stat('interval', driver.current_url))
             logger.success(f'Quiting the driver {driver.current_url}')
             driver.close()
             driver.quit()
