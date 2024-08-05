@@ -194,7 +194,7 @@ def main(url: str) -> None:
             time.sleep(DELAY_ON_PAGE)
             driver.delete_all_cookies()
             logger.info('Deleting cookies')
-            asyncio.run(send_stat('interval', driver.current_url))
+            asyncio.run(send_stat('interval'))
             logger.success(f'Quiting the driver {driver.current_url}')
             driver.close()
             driver.quit()
