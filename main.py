@@ -3,10 +3,10 @@ import random, asyncio
 
 from logging_settings import logger, LogFolderPath
 from fake_headers import Headers
-from headbot_data import send_stat, get_settings
+from headbot_data import send_stat, get_settings, get_proxy
 
 import selenium
-from selenium import webdriver
+from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 # Settings
@@ -20,6 +20,9 @@ LogFolderPath.path = 'logs/'
 
 # URLs
 URLS = settings['urls']
+
+# Proxy
+PROXY = get_proxy()['proxy']
 
 # Scrolls
 SCROLL_DELAY_MIN: float = random.uniform(0.25, 1)
@@ -126,19 +129,20 @@ def click_random_links(driver: webdriver.Chrome, url) -> None:
     time.sleep(4)
 
     try:
-        driver.execute_script('arguments[0].click();', random_link)
+        random_link.click()
         logger.info('Execute click!')
         asyncio.run(send_stat('links', driver.current_url))
         time.sleep(DELAY_ON_PAGE)
     except (selenium.common.exceptions.ElementNotInteractableException, selenium.common.exceptions.ElementClickInterceptedException, Exception) as ex:
-        logger.info('Execute get method')
-        logger.error(f'Error on click to random link {ex}')
-        driver.get(get_random_link(find_all_links(driver)).get_attribute('href'))
+        driver.execute_script('arguments[0].click();', random_link)
+        logger.info('Execute JAVA click!')
         asyncio.run(send_stat('links', driver.current_url))
         time.sleep(DELAY_ON_PAGE)
 
     except AttributeError as ex:
-        logger.error(f'Error while click non page, turning back {ex}')
+        driver.get(get_random_link(find_all_links(driver)).get_attribute('href'))
+        logger.info('Execute get method')
+        logger.error(f'Error on click to random link {ex}')
         time.sleep(random.randint(2, 7))
 
     smooth_scroll(driver)
@@ -162,7 +166,12 @@ def main(url: str) -> None:
 
     driver_path: str = DRIVER_PATH_CONF
     service = Service(executable_path=driver_path)
-    driver = webdriver.Chrome(options=options, service=service)
+    proxy_options = {
+        'http': f'http://{PROXY['username']}:{PROXY['password']}@{PROXY['ip']}:{PROXY['port']}',
+        'https': f'{PROXY['protocol']}://{PROXY['username']}:{PROXY['password']}@{PROXY['ip']}:{PROXY['port']}'
+    }
+    logger.info(f'Proxy IP: {PROXY["ip"]}')
+    driver = webdriver.Chrome(options=options, service=service, seleniumwire_options=proxy_options)
     driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
     driver.execute_script("""Object.defineProperty(navigator, 'userAgent', {get: () => arguments[0]})""", get_random_user_agents())
     driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": get_random_user_agents(),"platform": "Windows"})
