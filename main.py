@@ -167,8 +167,8 @@ def main(url: str) -> None:
     driver_path: str = DRIVER_PATH_CONF
     service = Service(executable_path=driver_path)
     proxy_options = {
-        'http': f'http://{PROXY['username']}:{PROXY['password']}@{PROXY['ip']}:{PROXY['port']}',
-        'https': f'{PROXY['protocol']}://{PROXY['username']}:{PROXY['password']}@{PROXY['ip']}:{PROXY['port']}'
+        'http': f"http://{PROXY['username']}:{PROXY['password']}@{PROXY['ip']}:{PROXY['port']}",
+        'https': f"{PROXY['protocol']}://{PROXY['username']}:{PROXY['password']}@{PROXY['ip']}:{PROXY['port']}"
     }
     logger.info(f'Proxy IP: {PROXY["ip"]}')
     driver = webdriver.Chrome(options=options, service=service, seleniumwire_options=proxy_options)
